@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Board game compass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#1f4a40; --felt-2:#173a32;
+  --card:#f6f1e3; --card-2:#ebe3cf;
+  --ink:#1c2624; --ink-soft:#5a6560;
+  --line:#c9bfa6;
+  --mustard:#e6ad2e; --sky:#3d7ab0;
+  --q1:#e4ecd9; --q2:#f3dfd0; --q3:#dbe6ef; --q4:#efe0ec;
+  --on-felt:#f6f1e3; --on-felt-soft:#b9cfc6;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --felt:#0f2621; --felt-2:#0a1c18;
+    --card:#22302c; --card-2:#2b3a36;
+    --ink:#eee8d8; --ink-soft:#a8b3ad;
+    --line:#45544f;
+    --q1:#273a2d; --q2:#3a2e27; --q3:#253341; --q4:#36293a;
+    --on-felt:#eee8d8; --on-felt-soft:#8fa89e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --felt:#0f2621; --felt-2:#0a1c18;
+  --card:#22302c; --card-2:#2b3a36;
+  --ink:#eee8d8; --ink-soft:#a8b3ad;
+  --line:#45544f;
+  --q1:#273a2d; --q2:#3a2e27; --q3:#253341; --q4:#36293a;
+  --on-felt:#eee8d8; --on-felt-soft:#8fa89e;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--felt); color:var(--on-felt);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.45;
+  background-image:radial-gradient(circle at 20% 0%, rgba(255,255,255,.06), transparent 50%);
+  min-height:100%;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:18px}
+h1{
+  font-family:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  font-weight:800;font-size:clamp(2rem,6vw,3.2rem);line-height:.95;margin:0;letter-spacing:-.02em;
+}
+h1 small{display:block;font-weight:400;font-size:1rem;letter-spacing:0;color:var(--on-felt-soft);margin-top:8px;font-family:"Atkinson Hyperlegible",system-ui,sans-serif}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who label{color:var(--on-felt-soft);font-size:.95rem}
+select,input[type=text]{
+  font:inherit;color:var(--ink);background:var(--card);border:2px solid transparent;border-radius:10px;padding:8px 10px;min-height:42px;
+}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:9px 14px;min-height:42px}
+.btn{background:var(--mustard);color:#1c2624;font-weight:700}
+.btn-ghost{background:transparent;color:inherit;border:2px solid currentColor}
+
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{background:var(--felt-2);color:var(--on-felt-soft);font-weight:700;border:2px solid transparent}
+.tab[aria-selected="true"]{background:var(--card);color:var(--ink)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:820px){.layout{grid-template-columns:1fr}}
+
+.table{background:var(--card);color:var(--ink);border-radius:18px;padding:14px;box-shadow:0 10px 0 var(--felt-2)}
+.grid-wrap{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto auto;gap:6px;align-items:center}
+.lab{font-size:.85rem;color:var(--ink-soft);text-align:center;line-height:1.2}
+.lab strong{display:block;color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.05rem;font-weight:600}
+.lab-top{grid-column:3;grid-row:1}
+.lab-bottom{grid-column:3;grid-row:3}
+.lab-left,.lab-right{grid-row:2;writing-mode:vertical-rl;max-height:100%}
+.lab-left{grid-column:2;transform:rotate(180deg)}
+.lab-right{grid-column:4}
+.vibes{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:1.25rem;color:var(--sky);display:inline-block;letter-spacing:.06em}
+.vibes span{display:inline-block;animation:wob 2.4s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:translateX(0)}50%{transform:translateX(-4px)}}
+@media (prefers-reduced-motion: reduce){.vibes span{animation:none}}
+
+.board{
+  grid-column:3;grid-row:2;position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;overflow:visible;
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;
+}
+.quad{position:absolute;width:50%;height:50%;display:flex;padding:10px;font-size:.8rem;color:var(--ink-soft);font-style:italic}
+.quad.tl{left:0;top:0;background:var(--q1)}
+.quad.tr{right:0;top:0;background:var(--q2);justify-content:flex-end;text-align:right}
+.quad.bl{left:0;bottom:0;background:var(--q3);align-items:flex-end}
+.quad.br{right:0;bottom:0;background:var(--q4);justify-content:flex-end;align-items:flex-end;text-align:right}
+.axis-x,.axis-y{position:absolute;background:var(--ink);opacity:.85}
+.axis-x{left:0;right:0;top:50%;height:2px;transform:translateY(-1px)}
+.axis-y{top:0;bottom:0;left:50%;width:2px;transform:translateX(-1px)}
+.board.zoomed{overflow:hidden;touch-action:none;outline:1.5px dashed var(--line);outline-offset:2px}
+.zoom-ctl{position:absolute;top:8px;right:8px;z-index:8;display:flex;gap:4px}
+.zoom-ctl button{min-height:36px;min-width:36px;padding:4px 10px;border-radius:8px;background:var(--ink);color:var(--card);font-weight:700;font-size:1rem;line-height:1}
+.zoom-ctl button:disabled{opacity:.3;cursor:default}
+.zoom-tip{margin:8px 0 0;font-size:.8rem;color:var(--ink-soft);text-align:center}
+.gridlines{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:12.5% 12.5%;opacity:.35;pointer-events:none}
+svg.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+.tok{
+  position:absolute;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;font-weight:700;font-size:.82rem;color:#fff;
+  border:3px solid var(--card);box-shadow:0 2px 0 rgba(0,0,0,.35);
+  text-shadow:0 1px 1px rgba(0,0,0,.4);transition:left .25s, top .25s, opacity .2s;
+}
+.tok.drag{cursor:grab;width:46px;height:46px;font-size:.95rem;z-index:5;outline:3px dashed var(--ink);outline-offset:3px}
+.tok.dragging{transition:none;cursor:grabbing}
+.tok.faded{opacity:.35}
+.tok.small{width:26px;height:26px;font-size:.62rem;border-width:2px}
+.tok.ring{background:transparent!important;border:3px dashed var(--ink);color:var(--ink);text-shadow:none;width:44px;height:44px;box-shadow:none}
+.tok .tip{position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);font-weight:400;font-size:.75rem;padding:2px 6px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;text-shadow:none}
+.tok:hover .tip{opacity:1}
+.hint{position:absolute;inset:auto 0 12px 0;text-align:center;pointer-events:none}
+.hint span{background:var(--ink);color:var(--card);padding:6px 12px;border-radius:999px;font-size:.9rem}
+
+.panel{background:var(--felt-2);border-radius:16px;padding:16px}
+.panel h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.35rem;margin:0 0 6px;line-height:1.1}
+.panel p{margin:0 0 12px;color:var(--on-felt-soft)}
+.panel select{width:100%}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.9rem;margin-bottom:4px;color:var(--on-felt-soft)}
+.roster{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.roster li{display:flex;align-items:center;gap:10px;font-size:.95rem}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid var(--on-felt)}
+.status{font-size:.88rem;color:var(--on-felt-soft);min-height:1.3em;margin-top:8px}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:.9rem;margin-top:10px}
+.legend div{display:flex;gap:8px;align-items:center}
+.lg{width:16px;height:16px;border-radius:50%;flex:none}
+.gap{background:var(--card);color:var(--ink);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:.95rem}
+.check{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--on-felt)}
+.check input{width:20px;height:20px;accent-color:var(--mustard)}
+.join{display:flex;gap:8px}
+.join input{flex:1;min-width:0}
+.notice{background:var(--card);color:var(--ink);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.hidden{display:none!important}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:0 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;background:var(--card-2);color:var(--ink);border:2px solid transparent;border-radius:999px;padding:6px 12px 6px 8px;min-height:40px;font-weight:700;font-size:.92rem}
+.chip .dot{width:16px;height:16px;border-color:var(--card)}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--card)}
+.chip .done{font-weight:400;color:var(--ink-soft)}
+.chips-label{font-size:.85rem;color:var(--ink-soft);margin:0 0 6px}
+.board.scrollable{touch-action:pan-y}
+.tok .tip{z-index:10}
+.tok.show .tip{opacity:1}
+.mobile-only{display:none}
+.axis-title{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:600;font-size:.95rem;color:var(--ink-soft);text-align:center;line-height:1.2}
+.axis-title-x{grid-column:3;grid-row:4;padding-top:8px}
+.axis-title-y{grid-column:1;grid-row:2;writing-mode:vertical-rl;transform:rotate(180deg);padding-left:6px;border-left:1.5px solid var(--line);margin-right:4px}
+.axis-title-x{border-top:1.5px solid var(--line);margin-top:2px}
+.axis-name{position:absolute;z-index:1;pointer-events:none;white-space:nowrap;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:600;font-size:.85rem;color:var(--ink);background:var(--card);border:1.5px solid var(--ink);padding:2px 8px;border-radius:999px}
+.axis-name-x{top:50%;left:8px;transform:translateY(calc(-100% - 6px))}
+.axis-name-y{left:calc(50% + 6px);top:8px;writing-mode:vertical-rl;padding:8px 2px}
+@media (max-width:640px){
+  .wrap{padding:12px 10px calc(96px + env(safe-area-inset-bottom,0px))}
+  header{margin-bottom:10px;gap:10px}
+  h1{font-size:1.9rem}
+  h1 small{font-size:.9rem;margin-top:4px}
+  .who{width:100%}
+  .who select{flex:1}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;gap:4px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:var(--felt-2);box-shadow:0 -1px 0 rgba(255,255,255,.1)}
+  .tab{flex:1;font-size:.9rem;padding:8px 4px;min-height:50px;border-radius:12px;line-height:1.15}
+  .mobile-only{display:inline}
+  .desktop-only{display:none}
+  .layout{gap:12px}
+  .table{padding:10px 8px;border-radius:14px;box-shadow:none}
+  .grid-wrap{gap:4px}
+  .lab{font-size:.72rem}
+  .lab strong{font-size:.82rem}
+  .lab .sub{display:none}
+  .vibes{font-size:1rem}
+  .quad{font-size:.66rem;padding:6px}
+  .tok{width:32px;height:32px;font-size:.72rem}
+  .tok.drag{width:46px;height:46px}
+  .tok.small{width:24px;height:24px}
+  .tok.ring{width:38px;height:38px}
+  .hint span{font-size:.82rem}
+  .axis-title{font-size:.78rem}
+  .axis-name-y{padding:6px 1px}
+  .panel{padding:14px;border-radius:14px}
+  .panel .long{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Board game compass<small>Where does everyone really land? Place yourself, then place your crew as the miles pile up.</small></h1>
+    <div class="who">
+      <label for="meSel">Playing as</label>
+      <select id="meSel"><option value="">Pick yourself…</option></select>
+    </div>
+  </header>
+
+  <div id="notice" class="notice hidden"></div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-mode="self" aria-selected="true"><span class="desktop-only">Place yourself</span><span class="mobile-only">Place me</span></button>
+    <button class="tab" role="tab" data-mode="others" aria-selected="false"><span class="desktop-only">Place someone else</span><span class="mobile-only">Place others</span></button>
+    <button class="tab" role="tab" data-mode="map" aria-selected="false">See the map</button>
+  </div>
+
+  <div class="layout">
+    <div class="table">
+      <div id="chipsBox"></div>
+      <div class="grid-wrap">
+        <div class="lab lab-top"><strong>Survival of the fittest</strong></div>
+        <div class="lab lab-left"><span class="vibes" id="vibes" aria-label="vibes"></span></div>
+        <div class="board" id="board" aria-label="Placement board. Tap or drag to place a token.">
+          <div class="axis-x"></div><div class="axis-y"></div>
+          <svg class="overlay" id="overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div id="tokens"></div>
+          <div class="hint hidden" id="hint"><span></span></div>
+        </div>
+        <div class="lab lab-right"><strong>Rigorous and exhaustive analysis</strong></div>
+        <div class="lab lab-bottom"><strong>No man left behind</strong></div>
+        <div class="axis-title axis-title-x">I believe in…</div>
+        <div class="axis-title axis-title-y">Decisions should be made with…</div>
+      </div>
+      <p class="zoom-tip">Pinch to zoom into crowded spots.</p>
+    </div>
+
+    <aside class="panel">
+      <!-- self -->
+      <section id="p-self">
+        <h2>Place yourself</h2>
+        <p class="long">Drag your token (or tap the board) to where you honestly sit. You can move it any time; we keep a trail.</p>
+        <div id="selfJoin">
+          <div class="field">
+            <label for="newName">New here? Add your name</label>
+            <div class="join"><input type="text" id="newName" maxlength="40" placeholder="First and last name"><button class="btn" id="joinBtn">Join</button></div>
+          </div>
+        </div>
+        <div class="status" id="selfStatus"></div>
+        <h2 style="margin-top:16px;font-size:1.05rem">The crew</h2>
+        <ul class="roster" id="roster"></ul>
+      </section>
+
+      <!-- others -->
+      <section id="p-others" class="hidden">
+        <h2>Place someone else</h2>
+        <p class="long">Where do you think they land? Their own placement shows as a faded token. Agree with it, or drag them to where they really belong.</p>
+        <div class="field">
+          <label for="addName">Someone not on the list yet?</label>
+          <div class="join"><input type="text" id="addName" maxlength="40" placeholder="Their first and last name"><button class="btn" id="addBtn">Add</button></div>
+        </div>
+        <div class="status" id="othersStatus"></div>
+      </section>
+
+      <!-- map -->
+      <section id="p-map" class="hidden">
+        <h2>See the map</h2>
+        <label class="check"><input type="checkbox" id="trailChk"> Show how placements shifted over the trip</label>
+        <div class="legend" id="legend"></div>
+        <div id="gapBox"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  const COLORS = ["#d9534f","#3d7ab0","#2e9a6b","#e08a1e","#8a4fbf","#c2457e","#1f8f9a","#7a6a2f","#4a5bd6","#b5482b","#4f7f2a","#9b3b5a"];
+  const state = { online:false, people:{}, placements:{}, me:"", mode:"self", target:"", view:"__self", trail:false };
+  const $ = id => document.getElementById(id);
+  const board = $("board"), tokensEl = $("tokens"), overlay = $("overlay");
+
+  // wavy vibes label
+  const vibesText = "~v i b e s~";
+  $("vibes").innerHTML = [...vibesText].map((c,i)=>`<span style="animation-delay:${(i*0.12).toFixed(2)}s">${c===" "?"&nbsp;":c.replace("<","&lt;")}</span>`).join("");
+
+  try { state.me = localStorage.getItem("rtc-me") || ""; } catch(e) {}
+
+  // ---------- helpers ----------
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const initials = n => { const p = String(n||"?").trim().split(/\s+/).filter(Boolean); if(!p.length) return "?"; return (p[0][0] + (p.length > 1 ? p[p.length-1][0] : "")).toUpperCase(); };
+  const Z = { k:1, cx:50, cy:50 };
+  const clampC = v => { const h = 50 / Z.k; return Math.max(h, Math.min(100 - h, v)); };
+  const pct = (x,y) => { const bx = (1-x)/2*100, by = (1+y)/2*100; return { left:(bx - Z.cx)*Z.k + 50, top:(by - Z.cy)*Z.k + 50 }; };
+  const clamp = v => Math.max(-1, Math.min(1, v));
+  const pid = (r,t) => r + "__" + t;
+  const person = id => state.people[id];
+  const nameOf = id => (person(id) && person(id).name) || "Someone";
+  const colorOf = id => (person(id) && person(id).color) || "#777";
+  const sortedPeople = () => Object.entries(state.people).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  const placement = (r,t) => state.placements[pid(r,t)];
+  const othersOn = t => Object.values(state.placements).filter(p => p.target===t && p.rater!==t && person(p.rater));
+
+  function notice(msg){ const n=$("notice"); if(!msg){n.classList.add("hidden");return;} n.textContent=msg; n.classList.remove("hidden"); }
+
+  // ---------- server calls ----------
+  const API = "/api/state";
+  async function api(body){
+    const res = await fetch(API, { method: body ? "POST" : "GET", headers: body ? { "Content-Type":"application/json" } : {}, body: body ? JSON.stringify(body) : undefined, cache:"no-store" });
+    let data = null;
+    try { data = await res.json(); } catch(e) {}
+    if(!res.ok) { const err = new Error((data && data.error) || ("HTTP " + res.status)); err.status = res.status; throw err; }
+    return data;
+  }
+
+  // ---------- writes (one at a time per placement) ----------
+  const chains = {};
+  const pending = {}; // key -> number of unconfirmed writes
+  function savePlacement(rater, target, x, y){
+    const key = pid(rater,target);
+    const prev = state.placements[key];
+    const t = Date.now();
+    let history = (prev && Array.isArray(prev.history)) ? prev.history.slice() : [];
+    history.push({x:+x.toFixed(3), y:+y.toFixed(3), t});
+    if(history.length > 40) history = history.slice(-40);
+    state.placements[key] = { rater, target, x:+x.toFixed(3), y:+y.toFixed(3), updatedAt:t, history }; // optimistic
+    const statusEl = rater===target ? $("selfStatus") : $("othersStatus");
+    statusEl.textContent = "Saving…";
+    pending[key] = (pending[key] || 0) + 1;
+    chains[key] = (chains[key] || Promise.resolve()).then(() =>
+      api({ action:"savePlacement", rater, target, x, y })
+    ).then(res => {
+      if(res && res.placement) state.placements[key] = res.placement;
+      statusEl.textContent = rater===target ? "Saved. Move it whenever you change your mind." : `Saved your take on ${nameOf(target)}.`;
+    }).catch(() => {
+      statusEl.textContent = "Couldn’t save that move. Check your connection and drag again.";
+    }).finally(() => { pending[key]--; if(!drag) render(); });
+    render();
+  }
+
+  async function addPerson(name, claim){
+    name = name.trim().replace(/\s+/g, " ").slice(0,40);
+    if(!name) return;
+    const existing = sortedPeople().find(([,p]) => p.name.toLowerCase() === name.toLowerCase());
+    if(existing){ if(claim) setMe(existing[0]); else { state.target = existing[0]; render(); } return; }
+    const used = new Set(Object.values(state.people).map(p=>p.color));
+    const color = COLORS.find(c=>!used.has(c)) || COLORS[Object.keys(state.people).length % COLORS.length];
+    let res;
+    try { res = await api({ action:"addPerson", name, color }); }
+    catch(err){ notice(err.message && err.status === 400 ? err.message : "Couldn’t add that name. Check your connection and try again."); return; }
+    notice("");
+    state.people[res.id] = res.person;
+    if(claim) setMe(res.id); else { state.target = res.id; }
+    render();
+  }
+
+  function setMe(id){
+    state.me = id;
+    try { localStorage.setItem("rtc-me", id); } catch(e) {}
+    if(state.target === id) state.target = "";
+    render();
+  }
+
+  // ---------- token rendering ----------
+  function tokenHTML(id, x, y, cls, label, tip){
+    const p = pct(x,y);
+    const bg = cls.includes("ring") ? "" : `background:${colorOf(id)};`;
+    return `<div class="tok ${cls}" data-id="${esc(id)}" style="left:${p.left}%;top:${p.top}%;${bg}">${esc(label)}<span class="tip">${esc(tip)}</span></div>`;
+  }
+
+  function trailSVG(hist, color, dashed){
+    if(!hist || hist.length < 2) return "";
+    const pts = hist.map(h => { const p = pct(h.x,h.y); return `${p.left},${p.top}`; }).join(" ");
+    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round" ${dashed?'stroke-dasharray="1.5 1.2"':''} vector-effect="non-scaling-stroke" style="stroke-width:3px" opacity=".8"/>` +
+      hist.slice(0,-1).map(h=>{const p=pct(h.x,h.y);return `<circle cx="${p.left}" cy="${p.top}" r="0.9" fill="${color}" opacity=".7"/>`;}).join("");
+  }
+  function lineSVG(a, b){
+    const p=pct(a.x,a.y), q=pct(b.x,b.y);
+    return `<line x1="${p.left}" y1="${p.top}" x2="${q.left}" y2="${q.top}" stroke="currentColor" stroke-dasharray="2 1.5" vector-effect="non-scaling-stroke" style="stroke-width:2.5px;color:var(--ink)" opacity=".7"/>`;
+  }
+
+  function avg(list){
+    if(!list.length) return null;
+    return { x: list.reduce((s,p)=>s+p.x,0)/list.length, y: list.reduce((s,p)=>s+p.y,0)/list.length };
+  }
+
+  function describeGap(self, crowd, name){
+    const dx = crowd.x - self.x, dy = crowd.y - self.y;
+    const dist = Math.hypot(dx,dy);
+    if(dist < 0.18) return `The crew sees ${name} almost exactly the way ${name} does. Self-aware, or suspiciously persuasive.`;
+    const bits = [];
+    if(Math.abs(dx) >= 0.12) bits.push(dx > 0 ? "more vibes-driven" : "more analytical");
+    if(Math.abs(dy) >= 0.12) bits.push(dy > 0 ? "more of a team player" : "more cutthroat");
+    const strength = dist > 0.8 ? "a lot " : dist > 0.4 ? "" : "a bit ";
+    return `The crew thinks ${name} is ${strength}${bits.join(" and ")} than ${name} thinks.`;
+  }
+
+  function chip(value, label, color, pressed, extra){
+    return `<button class="chip" data-chip="${esc(value)}" aria-pressed="${pressed?"true":"false"}">${color?`<span class="dot" style="background:${color}"></span>`:""}${esc(label)}${extra?` <span class="done">${extra}</span>`:""}</button>`;
+  }
+
+  function hint(text){ const h=$("hint"); if(!text){h.classList.add("hidden");return;} h.querySelector("span").textContent=text; h.classList.remove("hidden"); }
+
+  // ---------- main render ----------
+  function render(){
+    // who select
+    const meSel = $("meSel");
+    const opts = ['<option value="">Pick yourself…</option>'].concat(sortedPeople().map(([id,p])=>`<option value="${esc(id)}">${esc(p.name)}</option>`));
+    meSel.innerHTML = opts.join("");
+    if(state.me && !person(state.me) && Object.keys(state.people).length) { /* stale id */ }
+    meSel.value = person(state.me) ? state.me : "";
+
+    // tabs
+    document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.mode===state.mode ? "true":"false"));
+    ["self","others","map"].forEach(m => $("p-"+m).classList.toggle("hidden", state.mode!==m));
+
+    // roster
+    $("roster").innerHTML = sortedPeople().map(([id,p]) => {
+      const placed = !!placement(id,id);
+      return `<li><span class="dot" style="background:${p.color}"></span>${esc(p.name)}${id===state.me?" (you)":""}<span style="margin-left:auto;color:var(--on-felt-soft);font-size:.85rem">${placed?"placed":"not yet"}</span></li>`;
+    }).join("") || `<li style="color:var(--on-felt-soft)">Nobody yet. Add your name to start the map.</li>`;
+    $("selfJoin").classList.toggle("hidden", !!person(state.me));
+
+    let html = "", svg = "", chipsHTML = "";
+    board.style.cursor = "default";
+    hint("");
+
+    if(state.mode === "self"){
+      for(const [id] of sortedPeople()){
+        if(id === state.me) continue;
+        const pl = placement(id,id);
+        if(pl) html += tokenHTML(id, pl.x, pl.y, "faded", initials(nameOf(id)), nameOf(id));
+      }
+      if(person(state.me)){
+        board.style.cursor = "crosshair";
+        const pl = placement(state.me, state.me);
+        if(pl) html += tokenHTML(state.me, pl.x, pl.y, "drag", initials(nameOf(state.me)), "You");
+        else hint("Tap where you think you land");
+      } else hint("Pick yourself above, or add your name");
+    }
+
+    if(state.mode === "others"){
+      const others = sortedPeople().filter(([id]) => id !== state.me);
+      if(!person(state.target) || state.target===state.me) state.target = others.length ? others[0][0] : "";
+      if(others.length) chipsHTML = `<p class="chips-label">Who are you placing?</p><div class="chips">` + others.map(([id,p])=>chip(id, p.name, p.color, id===state.target, placement(state.me,id)?"✓":"")).join("") + `</div>`;
+      if(!person(state.me)) hint("Pick yourself first so we know who’s placing");
+      else if(state.target){
+        board.style.cursor = "crosshair";
+        const mine = placement(state.me, state.target);
+        const self = placement(state.target, state.target);
+        if(self) html += tokenHTML(state.target, self.x, self.y, "faded", initials(nameOf(state.target)), `${nameOf(state.target)}, by themselves`);
+        if(!$("othersStatus").textContent) $("othersStatus").textContent = self ? `The faded token is where ${nameOf(state.target)} put themselves.` : `${nameOf(state.target)} hasn’t placed themselves yet.`;
+        if(mine) html += tokenHTML(state.target, mine.x, mine.y, "drag", initials(nameOf(state.target)), `${nameOf(state.target)}, by you`);
+        else hint(self ? `Tap where you think ${nameOf(state.target)} really lands` : `Tap where you think ${nameOf(state.target)} lands`);
+      } else hint("Add someone to place them");
+    }
+
+    if(state.mode === "map"){
+      if(state.view !== "__self" && state.view !== "__crowd" && !person(state.view)) state.view = "__self";
+      chipsHTML = `<p class="chips-label">Show everyone, or pick a person to compare self vs. crew</p><div class="chips">` + chip("__self","Everyone: self","",state.view==="__self") + chip("__crowd","Everyone: by the crew","",state.view==="__crowd") + sortedPeople().map(([id,p])=>chip(id,p.name,p.color,state.view===id)).join("") + `</div>`;
+      let legend = "", gap = "";
+
+      if(state.view === "__self" || state.view === "__crowd"){
+        let any = false;
+        for(const [id] of sortedPeople()){
+          let pt = null, hist = null;
+          if(state.view === "__self"){ const pl = placement(id,id); if(pl){ pt = pl; hist = pl.history; } }
+          else { pt = avg(othersOn(id)); }
+          if(!pt) continue;
+          any = true;
+          if(state.trail && hist) svg += trailSVG(hist, colorOf(id));
+          html += tokenHTML(id, pt.x, pt.y, "", initials(nameOf(id)), nameOf(id));
+        }
+        legend = state.view === "__self" ? "Each token is where that person placed themselves." : "Each token is the average of where everyone else placed that person.";
+        if(!any) hint(state.view==="__self" ? "Nobody has placed themselves yet" : "Nobody has placed anyone else yet");
+      } else {
+        const id = state.view, nm = nameOf(id);
+        const self = placement(id,id);
+        const theirs = othersOn(id);
+        const crowd = avg(theirs);
+        if(state.trail){
+          if(self) svg += trailSVG(self.history, colorOf(id));
+          theirs.forEach(p => svg += trailSVG(p.history, colorOf(p.rater), true));
+        }
+        if(self && crowd) svg += lineSVG(self, crowd);
+        theirs.forEach(p => html += tokenHTML(p.rater, p.x, p.y, "small", initials(nameOf(p.rater)), `${nameOf(p.rater)}’s take`));
+        if(crowd) html += tokenHTML(id, crowd.x, crowd.y, "ring", initials(nm), `Crew average for ${nm}`);
+        if(self) html += tokenHTML(id, self.x, self.y, "", initials(nm), `${nm}, by themselves`);
+        legend = `<div><span class="lg" style="background:${colorOf(id)}"></span>${esc(nm)}, by themselves</div>
+                  <div><span class="lg" style="border:2px dashed currentColor"></span>Crew average (${theirs.length} ${theirs.length===1?"take":"takes"})</div>
+                  <div><span class="lg" style="width:12px;height:12px;background:var(--on-felt-soft)"></span>Small tokens: each person’s take, in their colour</div>`;
+        if(self && crowd) gap = `<div class="gap">${esc(describeGap(self, crowd, nm))}</div>`;
+        else if(!self && !crowd) hint(`Nobody has placed ${nm} yet`);
+        else if(!self) gap = `<div class="gap">${esc(nm)} hasn’t placed themselves yet.</div>`;
+        else gap = `<div class="gap">Nobody else has placed ${esc(nm)} yet.</div>`;
+      }
+      $("legend").innerHTML = legend.startsWith("<div") ? legend : `<div>${esc(legend)}</div>`;
+      $("gapBox").innerHTML = gap;
+      $("trailChk").checked = state.trail;
+    }
+
+    tokensEl.innerHTML = html;
+    overlay.innerHTML = svg;
+    const oldChips = document.querySelector("#chipsBox .chips");
+    const sl = oldChips ? oldChips.scrollLeft : 0;
+    $("chipsBox").innerHTML = chipsHTML;
+    const newChips = document.querySelector("#chipsBox .chips");
+    if(newChips) newChips.scrollLeft = sl;
+    const zoomed = Z.k > 1.001;
+    board.classList.toggle("zoomed", zoomed);
+    board.classList.toggle("scrollable", !activeTarget() && !zoomed);
+    const o = pct(0,0);
+    document.querySelector(".axis-x").style.top = o.top + "%";
+    document.querySelector(".axis-y").style.left = o.left + "%";
+    if(!activeTarget()) board.style.cursor = zoomed ? "grab" : "default";
+  }
+
+  // ---------- board interaction ----------
+  function activeTarget(){
+    if(!person(state.me)) return null;
+    if(state.mode === "self") return state.me;
+    if(state.mode === "others" && person(state.target) && state.target !== state.me) return state.target;
+    return null;
+  }
+  function screenPct(ev){
+    const r = board.getBoundingClientRect();
+    return { sx: (ev.clientX - r.left)/r.width*100, sy: (ev.clientY - r.top)/r.height*100 };
+  }
+  function pointToXY(ev){
+    const { sx, sy } = screenPct(ev);
+    const bx = (sx - 50)/Z.k + Z.cx, by = (sy - 50)/Z.k + Z.cy;
+    return { x: clamp(1 - bx/50), y: clamp(by/50 - 1) };
+  }
+  let raf = 0;
+  function scheduleRender(){ if(raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+  function setZoom(k, cx, cy){
+    Z.k = Math.max(1, Math.min(8, k));
+    Z.cx = clampC(cx); Z.cy = clampC(cy);
+    scheduleRender();
+  }
+  function zoomAt(factor, sx, sy){
+    const bx = (sx - 50)/Z.k + Z.cx, by = (sy - 50)/Z.k + Z.cy;
+    const k = Math.max(1, Math.min(8, Z.k * factor));
+    setZoom(k, bx - (sx - 50)/k, by - (sy - 50)/k);
+  }
+  const pointers = new Map();
+  let drag = null, pinch = null, pan = null;
+  function startPinch(){
+    const [a, b] = [...pointers.values()];
+    const sx = (a.sx + b.sx)/2, sy = (a.sy + b.sy)/2;
+    pinch = { d0: Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1, k0: Z.k, bx: (sx - 50)/Z.k + Z.cx, by: (sy - 50)/Z.k + Z.cy };
+  }
+  board.addEventListener("pointerdown", ev => {
+    if(ev.target.closest(".zoom-ctl")) return;
+    pointers.set(ev.pointerId, screenPct(ev));
+    try { board.setPointerCapture(ev.pointerId); } catch(e) {}
+    if(pointers.size >= 2){
+      if(drag){ drag = null; render(); }
+      pan = null;
+      startPinch();
+      ev.preventDefault();
+      return;
+    }
+    const target = activeTarget();
+    if(!target){
+      const t = ev.target.closest(".tok");
+      tokensEl.querySelectorAll(".tok.show").forEach(el => { if(el !== t) el.classList.remove("show"); });
+      if(t) t.classList.toggle("show");
+      if(Z.k > 1.001){
+        const p = pointers.get(ev.pointerId);
+        pan = { sx:p.sx, sy:p.sy, cx:Z.cx, cy:Z.cy };
+        board.style.cursor = "grabbing";
+        ev.preventDefault();
+      }
+      return;
+    }
+    const xy = pointToXY(ev);
+    drag = { target, xy };
+    let tok = tokensEl.querySelector(".tok.drag");
+    if(!tok){
+      tokensEl.insertAdjacentHTML("beforeend", tokenHTML(target, xy.x, xy.y, "drag", initials(nameOf(target)), ""));
+      tok = tokensEl.querySelector(".tok.drag");
+      hint("");
+    }
+    tok.classList.add("dragging");
+    const p = pct(xy.x, xy.y); tok.style.left = p.left+"%"; tok.style.top = p.top+"%";
+    drag.tok = tok;
+    ev.preventDefault();
+  });
+  board.addEventListener("pointermove", ev => {
+    if(!pointers.has(ev.pointerId)) return;
+    pointers.set(ev.pointerId, screenPct(ev));
+    if(pinch && pointers.size >= 2){
+      const [a, b] = [...pointers.values()];
+      const sx = (a.sx + b.sx)/2, sy = (a.sy + b.sy)/2;
+      const k = Math.max(1, Math.min(8, pinch.k0 * Math.hypot(a.sx - b.sx, a.sy - b.sy) / pinch.d0));
+      setZoom(k, pinch.bx - (sx - 50)/k, pinch.by - (sy - 50)/k);
+      return;
+    }
+    if(pan){
+      const p = pointers.get(ev.pointerId);
+      setZoom(Z.k, pan.cx - (p.sx - pan.sx)/Z.k, pan.cy - (p.sy - pan.sy)/Z.k);
+      return;
+    }
+    if(!drag) return;
+    drag.xy = pointToXY(ev);
+    const p = pct(drag.xy.x, drag.xy.y);
+    drag.tok.style.left = p.left+"%"; drag.tok.style.top = p.top+"%";
+  });
+  function endPointer(ev){
+    pointers.delete(ev.pointerId);
+    if(pinch){ if(pointers.size < 2) pinch = null; return; }
+    if(pan){ pan = null; scheduleRender(); return; }
+    if(!drag) return;
+    const d = drag; drag = null;
+    savePlacement(state.me, d.target, d.xy.x, d.xy.y);
+  }
+  board.addEventListener("pointerup", endPointer);
+  board.addEventListener("pointercancel", endPointer);
+  board.addEventListener("wheel", ev => {
+    if(!(ev.ctrlKey || ev.metaKey)) return;
+    ev.preventDefault();
+    const { sx, sy } = screenPct(ev);
+    zoomAt(Math.exp(-ev.deltaY * 0.0025), sx, sy);
+  }, { passive:false });
+
+  // ---------- controls ----------
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+    state.mode = t.dataset.mode; $("othersStatus").textContent = ""; render();
+    if(window.matchMedia("(max-width:640px)").matches) window.scrollTo({top:0, behavior:"smooth"});
+  }));
+  $("meSel").addEventListener("change", e => setMe(e.target.value));
+  $("chipsBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-chip]");
+    if(!b) return;
+    const v = b.getAttribute("data-chip");
+    if(state.mode === "others"){ state.target = v; $("othersStatus").textContent = ""; }
+    else if(state.mode === "map"){ state.view = v; }
+    render();
+  });
+  $("trailChk").addEventListener("change", e => { state.trail = e.target.checked; render(); });
+  $("joinBtn").addEventListener("click", () => { const v=$("newName").value; $("newName").value=""; addPerson(v, true); });
+  $("newName").addEventListener("keydown", e => { if(e.key==="Enter") $("joinBtn").click(); });
+  $("addBtn").addEventListener("click", () => { const v=$("addName").value; $("addName").value=""; addPerson(v, false); });
+  $("addName").addEventListener("keydown", e => { if(e.key==="Enter") $("addBtn").click(); });
+
+  render();
+
+  // ---------- data (polling) ----------
+  const cleanPeople = raw => {
+    const next = {};
+    for(const [id, v] of Object.entries(raw || {})){
+      if(v && typeof v.name === "string") next[id] = { name: v.name.slice(0,40), color: typeof v.color==="string" && /^#[0-9a-f]{6}$/i.test(v.color) ? v.color : "#777", createdAt: v.createdAt||0 };
+    }
+    return next;
+  };
+  const cleanPlacements = raw => {
+    const next = {};
+    for(const [id, v] of Object.entries(raw || {})){
+      if(!v || typeof v.x!=="number" || typeof v.y!=="number") continue;
+      next[id] = { rater:String(v.rater), target:String(v.target), x:clamp(v.x), y:clamp(v.y), updatedAt:v.updatedAt||0,
+        history: Array.isArray(v.history) ? v.history.filter(h=>h && typeof h.x==="number" && typeof h.y==="number").map(h=>({x:clamp(h.x),y:clamp(h.y),t:h.t||0})) : [] };
+    }
+    return next;
+  };
+  let polling = false, failures = 0;
+  async function refresh(){
+    if(polling) return;
+    polling = true;
+    try {
+      const data = await api();
+      const people = cleanPeople(data.people);
+      const placements = cleanPlacements(data.placements);
+      // keep this device's unconfirmed moves instead of snapping back
+      for(const [key, n] of Object.entries(pending)) if(n > 0 && state.placements[key]) placements[key] = state.placements[key];
+      for(const [id, p] of Object.entries(state.people)) if(!people[id] && Date.now() - (p.createdAt||0) < 15000) people[id] = p;
+      state.people = people;
+      state.placements = placements;
+      state.online = true;
+      if(failures > 0) notice("");
+      failures = 0;
+      if(!drag) render();
+    } catch(e) {
+      failures++;
+      if(failures >= 2) notice("Can’t reach the map right now. Placements will sync again once you’re back online.");
+    } finally { polling = false; }
+  }
+  refresh();
+  setInterval(() => { if(document.visibilityState === "visible") refresh(); }, 4000);
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); });
+  window.addEventListener("focus", refresh);
+})();
+</script>
+</body>
+</html>
